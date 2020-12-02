@@ -1,15 +1,16 @@
 module.exports = (sequelize, DataTypes) => {
-  const MoviesGenere = sequelize.define('moviegeneres', {
+  const MoviesGenere = sequelize.define('moviegenere', {
     id: {
       primaryKey: true,
       type: DataTypes.INTEGER,
-      allowNull: false
+      allowNull: false,
+      autoIncrement: true,
     },
     movieId: {
       type: DataTypes.INTEGER,
       allowNull: false
     },
-    GenereId: {
+    genereId: {
       type: DataTypes.INTEGER,
       allowNull: false
     },

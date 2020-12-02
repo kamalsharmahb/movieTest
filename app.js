@@ -4,8 +4,8 @@ var cookieParser = require('cookie-parser');
 var logger = require('morgan');
 
 var indexRouter = require('./routes/index');
-var moviesRouter = require('./routes/movies');
-var genereRouter = require('./routes/genere');
+var moviesRouter = require('./routes/movies.route');
+var genereRouter = require('./routes/genere.route');
 
 var app = express();
 

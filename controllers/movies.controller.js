@@ -1,89 +1,154 @@
-import db from '../config/sequelize';
-
-const { Movies, MoviesGenere } = db;
+var { Movies, moviegenere } = require('../config/sequelize');
 
 /**
- * Load user and append to req.
+ * Load selected Movie and append to req.
  */
 function load(req, res, next, id) {
     Movies.findOne({ where: { id } })
-        .then((user) => {
-            if (!user) {
-                const e = new Error('Movies does not exist');
-                e.status = httpStatus.NOT_FOUND;
+        .then((movie) => {
+            if (!movie) {
+                const e = new Error('Movie does not exist');
+                e.status = 404;
                 return next(e);
             }
-            req.user = user; // eslint-disable-line no-param-reassign
+            req.movie = movie; 
             return next();
         })
         .catch((e) => next(e));
 }
 
 /**
- * Get user
+ * Get Movie
  * @returns {Movies}
  */
 function get(req, res) {
-    return res.json(req.user);
+    return res.json(req.movie);
 }
 
 /**
- * Create new user
- * @property {string} req.body.username - The username of user.
- * @property {string} req.body.mobileNumber - The mobileNumber of user.
+ * Create new movie
+ * @property {string} req.body.name - The name of movie.
+ * @property {string} req.body.description - Detail description of movie.
+ * @property {date} req.body.releaseDate - Release date of movie.
+ * @property {integer} req.body.duration - Duration (in minutes) of movie.
+ * @property {integer} req.body.rating - Rating of movie on scale of 5.
+ * @property {string} req.body.genereId - ID for Genere linked to this movie.
  * @returns {Movies}
  */
 function create(req, res, next) {
-    const user = Movies.build({
-        username: req.body.username,
-    });
+    const { name, description, releaseDate, duration, rating, generes } = req.body;
 
-    user.save()
-        .then((savedMovies) => res.json(savedMovies))
-        .catch((e) => next(e));
+    // Validate Input Params
+    if (!name) {
+      const e = new Error('Movie name cannot be null');
+      e.status = 400;
+      return next(e);
+    }
+    var date_regex = /^(0[1-9]|1[0-2])\/(0[1-9]|1\d|2\d|3[01])\/(19|20)\d{2}$/;
+    if (!(date_regex.test(releaseDate))) {
+      const e = new Error('validation error for releaseDate. It should be MM/dd/yyyy');
+      e.status = 400;
+      return next(e);
+    }
+
+    if (!Number.isInteger(rating) || rating > 5) {
+      const e = new Error('rating should be less than or equal to 5');
+      e.status = 400;
+      return next(e);
+    }
+
+    if (!Number.isInteger(duration)) {
+      const e = new Error('Duration should be in minute');
+      e.status = 400;
+      return next(e);
+    }
+
+    if (generes.length === 0) {
+      const e = new Error('Atleast one generes must be selected');
+      e.status = 400;
+      return next(e);
+    }
+
+    let savedMovie = {};
+
+    Movies.create({
+          name:         name,
+          description:  description,
+          releaseDate:  releaseDate,
+          duration:     duration,
+          rating:       rating,
+      })
+      .then((savedMovies) => {
+        savedMovie = savedMovies;
+        let movieGenereArr = [];
+        for (let i = 0; i < generes.length; i++) {
+          movieGenereArr.push({
+            movieId: savedMovies.id,
+            genereId: generes[i]
+          });
+          moviegenere.bulkCreate(movieGenereArr);
+        }
+      })
+      .then(() => {
+        res.json(savedMovie)
+      })
+      .catch((e) => next(e));
 }
 
 /**
- * Update existing user
- * @property {string} req.body.username - The username of user.
- * @property {string} req.body.mobileNumber - The mobileNumber of user.
+ * Update existing movie
+ * @property {string} req.body.name - The name of movie.
+ * @property {string} req.body.description - Detail description of movie.
+ * @property {date} req.body.releaseDate - Release date of movie.
+ * @property {integer} req.body.duration - Duration (in minutes) of movie.
+ * @property {integer} req.body.rating - Rating of movie on scale of 5.
  * @returns {Movies}
  */
 function update(req, res, next) {
-    const { user } = req;
-    user.username = req.body.username;
-    user.mobileNumber = req.body.mobileNumber;
+    const { movie } = req;
+    const { name, description, releaseDate, duration, rating } = req.body;
 
-    user.save()
+    movie.name        = name,
+    movie.description = description,
+    movie.releaseDate = releaseDate,
+    movie.duration    = duration,
+    movie.rating      = rating,
+
+    movie.save()
         .then((savedMovies) => res.json(savedMovies))
         .catch((e) => next(e));
 }
 
 /**
- * Get user list.
- * @property {number} req.query.skip - Number of users to be skipped.
- * @property {number} req.query.limit - Limit number of users to be returned.
+ * Get movie list.
+ * @property {number} req.query.skip - Number of movies to be skipped.
+ * @property {number} req.query.limit - Limit number of movies to be returned.
  * @returns {Movies[]}
  */
 function list(req, res, next) {
     const { limit = 50 } = req.query;
     Movies.findAll({ limit })
-        .then((users) => res.json(users))
+        .then((movies) => res.json(movies))
         .catch((e) => next(e));
 }
 
 /**
- * Delete user.
+ * Delete movie.
  * @returns {Movies}
  */
 function remove(req, res, next) {
-    const { user } = req;
-    const { username } = req.user;
-    user.destroy()
-        .then(() => res.json(username))
+    const { movie } = req;
+    const { name } = req.movie;
+    movie.destroy()
+        .then(() => {
+          // delete linked data from genere mapping
+          console.log('param - ', req.params.id);
+          moviegenere.destroy({ where: { movieId: req.params.id } });
+        })
+        .then(() => res.json(name))
         .catch((e) => next(e));
 }
 
-export default {
+module.exports = {
     load, get, create, update, list, remove,
 };

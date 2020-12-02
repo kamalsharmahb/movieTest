@@ -3,32 +3,33 @@ module.exports = (sequelize, DataTypes) => {
     id: {
       primaryKey: true,
       type: DataTypes.INTEGER,
-      allowNull: false
+      allowNull: false,
+      autoIncrement: true,
     },
     name: {
-        type: DataTypes.STRING,
-        allowNull: false
+      type: DataTypes.STRING,
+      allowNull: false
     },
     description: {
       type: DataTypes.STRING,
       allowNull: true
     },
-      releaseDate: {
-        type: DataTypes.DATE,
-        allowNull: true
+    releaseDate: {
+      type: DataTypes.DATE,
+      allowNull: true
     },
-      duration: {
-        type: DataTypes.INTEGER,
-        allowNull: true
+    duration: {
+      type: DataTypes.INTEGER,
+      allowNull: true
     },
-      rating: {
-        type: DataTypes.INTEGER,
-        allowNull: true
+    rating: {
+      type: DataTypes.INTEGER,
+      allowNull: true
     },
-      createdAt: {
-          type: DataTypes.DATE,
-          allowNull: false,
-      },
+    createdAt: {
+      type: DataTypes.DATE,
+      allowNull: false,
+    },
   });
 
   return Movies;

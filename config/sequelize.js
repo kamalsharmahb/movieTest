@@ -7,15 +7,31 @@ var config = require('./config');
 const db = {};
 
 // connect to postgres db
+const sequelizeOptions = {
+    dialect: 'postgres',
+    port: config.postgres.port,
+    host: config.postgres.host,
+    pool: {
+        max: 5,
+        min: 0,
+        idle: 10000,
+    },
+    ...(config.postgres.ssl && {
+        ssl: config.postgres.ssl,
+    }),
+    ...(config.postgres.ssl && config.postgres.ssl_ca_cert && {
+        dialectOptions: {
+            ssl: {
+                ca: config.postgres.ssl_ca_cert,
+            },
+        },
+    }),
+};
 const sequelize = new Sequelize(
     config.postgres.db,
     config.postgres.user,
     config.postgres.password,
-    {
-        dialect: 'postgres',
-        port: config.postgres.port,
-        host: config.postgres.host,
-    },
+    sequelizeOptions,
 );
 
 const modelsDir = path.normalize(`${__dirname}/../models`);
@@ -30,7 +46,7 @@ fs
         var model = require(path.join(modelsDir, file))(sequelize, Sequelize.DataTypes);
         db[model.name] = model;
     });
-
+console.log('db - ', db);
 // calling all the associate function, in order to make the association between the models
 Object.keys(db).forEach((modelName) => {
     if (db[modelName].associate) {
@@ -49,10 +65,6 @@ sequelize
             console.error('An error occured %j', error);
         }
     });
-// sequelize.sync().then((err) => {
-//     if (err) console.error('An error occured %j', err);
-//     else console.info('Database synchronized');
-// });
 
 // assign the sequelize variables to the db object and returning the db.
 module.exports = _.extend(

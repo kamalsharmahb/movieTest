@@ -1,2 +1,2 @@
 var {sequelize} = require('../config/sequelize');
-sequelize.sync();
+sequelize.sync({ force: true });
